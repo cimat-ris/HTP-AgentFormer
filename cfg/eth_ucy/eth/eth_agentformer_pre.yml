@@ -71,4 +71,3 @@ decay_step: 10
 decay_gamma: 0.5
 print_freq                   : 20
 model_save_freq              : 10
-

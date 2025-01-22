@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from utils.utils import initialize_weights
+from lib.utils import initialize_weights
 
 class MLP(nn.Module):
     

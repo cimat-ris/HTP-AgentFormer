@@ -10,9 +10,9 @@ from torch.utils.tensorboard import SummaryWriter
 sys.path.append(os.getcwd())
 from data.dataloader import data_generator
 from model.model_lib import model_dict
-from utils.torch import *
-from utils.config import Config
-from utils.utils import prepare_seed, print_log, AverageMeter, convert_secs2time, get_timestring
+from lib.torch import *
+from lib.config import Config
+from lib.utils import prepare_seed, print_log, AverageMeter, convert_secs2time, get_timestring
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.deterministic = True

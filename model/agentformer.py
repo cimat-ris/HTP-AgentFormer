@@ -8,8 +8,8 @@ from .agentformer_loss import loss_func
 from .common.dist import *
 from .agentformer_lib import AgentFormerEncoderLayer, AgentFormerDecoderLayer, AgentFormerDecoder, AgentFormerEncoder
 from .map_encoder import MapEncoder
-from utils.torch import *
-from utils.utils import initialize_weights
+from lib.torch import *
+from lib.utils import initialize_weights
 
 
 def generate_ar_mask(sz, agent_num, agent_mask):
@@ -67,7 +67,7 @@ class PositionalAgentEncoding(nn.Module):
         ae[:, 1::2] = torch.cos(position * div_term)
         ae = ae.unsqueeze(0).transpose(0, 1)
         return ae
-    
+
     def get_pos_enc(self, num_t, num_a, t_offset):
         pe = self.pe[t_offset: num_t + t_offset, :]
         pe = pe.repeat_interleave(num_a, dim=0)
@@ -153,12 +153,12 @@ class ContextEncoder(nn.Module):
         tf_in = self.input_fc(traj_in.view(-1, traj_in.shape[-1])).view(-1, 1, self.model_dim)
         agent_enc_shuffle = data['agent_enc_shuffle'] if self.agent_enc_shuffle else None
         tf_in_pos = self.pos_encoder(tf_in, num_a=data['agent_num'], agent_enc_shuffle=agent_enc_shuffle)
-        
+
         src_agent_mask = data['agent_mask'].clone()
         src_mask = generate_mask(tf_in.shape[0], tf_in.shape[0], data['agent_num'], src_agent_mask).to(tf_in.device)
-        
+
         data['context_enc'] = self.tf_encoder(tf_in_pos, mask=src_mask, num_agent=data['agent_num'])
-        
+
         context_rs = data['context_enc'].view(-1, data['agent_num'], self.model_dim)
         # compute per agent context
         if self.pooling == 'mean':
@@ -237,7 +237,7 @@ class FutureEncoder(nn.Module):
         tgt_agent_mask = data['agent_mask'].clone()
         mem_mask = generate_mask(tf_in.shape[0], data['context_enc'].shape[0], data['agent_num'], mem_agent_mask).to(tf_in.device)
         tgt_mask = generate_mask(tf_in.shape[0], tf_in.shape[0], data['agent_num'], tgt_agent_mask).to(tf_in.device)
-        
+
         tf_out, _ = self.tf_decoder(tf_in_pos, data['context_enc'], memory_mask=mem_mask, tgt_mask=tgt_mask, num_agent=data['agent_num'])
         tf_out = tf_out.view(traj_in.shape[0], -1, self.model_dim)
 
@@ -397,7 +397,7 @@ class FutureDecoder(nn.Module):
         pre_motion = data['pre_motion'].repeat_interleave(sample_num, dim=1)             # 10 x 80 x 2
         pre_vel = data['pre_vel'].repeat_interleave(sample_num, dim=1) if self.pred_type == 'vel' else None
         pre_motion_scene_norm = data['pre_motion_scene_norm'].repeat_interleave(sample_num, dim=1)
-        
+
         # p(z)
         prior_key = 'p_z_dist' + ('_infer' if mode == 'infer' else '')
         if self.learn_prior:
@@ -425,7 +425,7 @@ class FutureDecoder(nn.Module):
             self.decode_traj_ar(data, mode, context, pre_motion, pre_vel, pre_motion_scene_norm, z, sample_num, need_weights=need_weights)
         else:
             self.decode_traj_batch(data, mode, context, pre_motion, pre_vel, pre_motion_scene_norm, z, sample_num)
-        
+
 
 
 """ AgentFormer """
@@ -486,7 +486,7 @@ class AgentFormer(nn.Module):
 
         # save all computed variables
         self.data = None
-        
+
         # map encoder
         if self.use_map:
             self.map_encoder = MapEncoder(cfg.map_encoder)
@@ -496,7 +496,7 @@ class AgentFormer(nn.Module):
         self.context_encoder = ContextEncoder(cfg.context_encoder, self.ctx)
         self.future_encoder = FutureEncoder(cfg.future_encoder, self.ctx)
         self.future_decoder = FutureDecoder(cfg.future_decoder, self.ctx)
-        
+
     def set_device(self, device):
         self.device = device
         self.to(device)

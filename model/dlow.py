@@ -1,8 +1,8 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from utils.torch import *
-from utils.config import Config
+from lib.torch import *
+from lib.config import Config
 from .common.mlp import MLP
 from .common.dist import *
 from . import model_lib
@@ -81,7 +81,7 @@ class DLow(nn.Module):
         self.q_mlp = MLP(self.pred_model_dim, self.qnet_mlp)
         self.q_A = nn.Linear(self.q_mlp.out_dim, nk * nz)
         self.q_b = nn.Linear(self.q_mlp.out_dim, nk * nz)
-        
+
     def set_device(self, device):
         self.device = device
         self.to(device)
@@ -115,7 +115,7 @@ class DLow(nn.Module):
 
         pred_model.future_decoder(self.data, mode='infer', sample_num=self.nk, autoregress=True, z=z, need_weights=need_weights)
         return self.data
-    
+
     def forward(self):
         return self.main(mean=self.train_w_mean)
 
