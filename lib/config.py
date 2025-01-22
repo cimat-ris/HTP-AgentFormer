@@ -11,7 +11,7 @@ class Config:
 
     def __init__(self, cfg_id, tmp=False, create_dirs=False):
         self.id = cfg_id
-        cfg_path = 'cfg/**/%s.yml' % cfg_id
+        cfg_path = 'cfg/*/*/%s.yml' % cfg_id
         files = glob.glob(cfg_path, recursive=True)
         assert(len(files) == 1)
         self.yml_dict = EasyDict(yaml.safe_load(open(files[0], 'r')))
@@ -41,7 +41,7 @@ class Config:
         else:
             model_file = osp.basename(model_files[-1])
             epoch = int(osp.splitext(model_file)[0].split('model_')[-1])
-            return epoch            
+            return epoch
 
     def __getattribute__(self, name):
         yml_dict = super().__getattribute__('yml_dict')
@@ -65,4 +65,3 @@ class Config:
             return getattr(self, name)
         else:
             return default
-            
