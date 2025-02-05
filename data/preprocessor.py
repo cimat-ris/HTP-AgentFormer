@@ -1,34 +1,36 @@
 import torch, os, numpy as np, copy
 import cv2
-import glob
 from .map import GeometricMap
 
 
 class preprocess(object):
     
     def __init__(self, data_root, seq_name, parser, log, split='train', phase='training'):
-        self.parser = parser
-        self.dataset = parser.dataset
-        self.data_root = data_root
-        self.past_frames = parser.past_frames
-        self.future_frames = parser.future_frames
-        self.frame_skip = parser.get('frame_skip', 1)
-        self.min_past_frames = parser.get('min_past_frames', self.past_frames)
+        self.parser         = parser
+        self.dataset        = parser.dataset
+        self.data_root      = data_root
+        self.past_frames    = parser.past_frames
+        self.future_frames  = parser.future_frames
+        self.frame_skip     = parser.get('frame_skip', 1)
+        self.min_past_frames= parser.get('min_past_frames', self.past_frames)
         self.min_future_frames = parser.get('min_future_frames', self.future_frames)
-        self.traj_scale = parser.traj_scale
-        self.past_traj_scale = parser.traj_scale
-        self.load_map = parser.get('load_map', False)
-        self.map_version = parser.get('map_version', '0.1')
-        self.seq_name = seq_name
-        self.split = split
-        self.phase = phase
-        self.log = log
+        self.traj_scale     = parser.traj_scale
+        self.past_traj_scale= parser.traj_scale
+        self.load_map       = parser.get('load_map', False)
+        self.map_version    = parser.get('map_version', '0.1')
+        self.seq_name       = seq_name
+        self.split          = split
+        self.phase          = phase
+        self.log            = log
 
         if parser.dataset == 'nuscenes_pred':
             label_path = os.path.join(data_root, 'label/{}/{}.txt'.format(split, seq_name))
             delimiter = ' '
         elif parser.dataset in {'eth', 'hotel', 'univ', 'zara1', 'zara2'}:
             label_path = f'{data_root}/{parser.dataset}/{seq_name}.txt'
+            delimiter = ' '
+        elif parser.dataset == 'city_center':
+            label_path = f'{data_root}/gt_meters.txt'
             delimiter = ' '
         else:
             assert False, 'error'

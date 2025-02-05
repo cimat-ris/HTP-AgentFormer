@@ -7,17 +7,17 @@ import shutil
 
 sys.path.append(os.getcwd())
 from data.dataloader import data_generator
-from utils.torch import *
-from utils.config import Config
+from lib.torch import *
+from lib.config import Config
 from model.model_lib import model_dict
-from utils.utils import prepare_seed, print_log, mkdir_if_missing
+from lib.utils import prepare_seed, print_log, mkdir_if_missing
 
 
 def get_model_prediction(data, sample_k):
     model.set_data(data)
-    recon_motion_3D, _ = model.inference(mode='recon', sample_num=sample_k)
+    recon_motion_3D, _     = model.inference(mode='recon', sample_num=sample_k)
     sample_motion_3D, data = model.inference(mode='infer', sample_num=sample_k, need_weights=False)
-    sample_motion_3D = sample_motion_3D.transpose(0, 1).contiguous()
+    sample_motion_3D       = sample_motion_3D.transpose(0, 1).contiguous()
     return recon_motion_3D, sample_motion_3D
 
 def save_prediction(pred, data, suffix, save_dir):
@@ -55,10 +55,19 @@ def save_prediction(pred, data, suffix, save_dir):
 
 def test_model(generator, save_dir, cfg):
     total_num_pred = 0
+
+    # 
     while not generator.is_epoch_end():
+        # Get data from the generator (should be a dictionary)
         data = generator()
         if data is None:
-            continue
+            continue        
+        print('data keys')
+        print(data.keys())
+        print('pre_data shape')
+        print(data['pre_data'][0].shape)
+        print(len(data['pre_data']))
+        print(len(data['pre_motion_3D']))
         seq_name, frame = data['seq'], data['frame']
         frame = int(frame)
         sys.stdout.write('testing seq: %s, frame: %06d                \r' % (seq_name, frame))  
@@ -66,7 +75,11 @@ def test_model(generator, save_dir, cfg):
 
         gt_motion_3D = torch.stack(data['fut_motion_3D'], dim=0).to(device) * cfg.traj_scale
         with torch.no_grad():
+            # 
             recon_motion_3D, sample_motion_3D = get_model_prediction(data, cfg.sample_k)
+            print(sample_motion_3D.shape)
+            print(len(data['fut_motion_3D']))
+            print(data['fut_motion_3D'][0].shape)
         recon_motion_3D, sample_motion_3D = recon_motion_3D * cfg.traj_scale, sample_motion_3D * cfg.traj_scale
 
         """save samples"""
@@ -105,7 +118,6 @@ if __name__ == '__main__':
         epochs = [cfg.get_last_epoch()]
     else:
         epochs = [int(x) for x in args.epochs.split(',')]
-
     torch.set_default_dtype(torch.float32)
     device = torch.device('cuda', index=args.gpu) if args.gpu >= 0 and torch.cuda.is_available() else torch.device('cpu')
     if torch.cuda.is_available(): torch.cuda.set_device(args.gpu)
@@ -123,7 +135,7 @@ if __name__ == '__main__':
             if epoch > 0:
                 cp_path = cfg.model_path % epoch
                 print_log(f'loading model from checkpoint: {cp_path}', log, display=True)
-                model_cp = torch.load(cp_path, map_location='cpu')
+                model_cp = torch.load(cp_path, map_location='cpu',weights_only=True)
                 model.load_state_dict(model_cp['model_dict'], strict=False)
 
         """ save results and compute metrics """

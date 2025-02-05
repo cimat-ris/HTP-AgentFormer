@@ -35,13 +35,17 @@ def train(epoch):
     train_loss_meter['total_loss'] = AverageMeter()
     last_generator_index = 0
     while not generator.is_epoch_end():
+        # Get data from the generator (should be a dictionary)
         data = generator()
         if data is not None:
+            print(data.keys())
             seq, frame = data['seq'], data['frame']
             model.set_data(data)
-            model_data = model()
+            # Forward pass
+            __ = model()
+            # Compute loss
             total_loss, loss_dict, loss_unweighted_dict = model.compute_loss()
-            """ optimize """
+            # Backward pass and optimization step
             optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
@@ -87,12 +91,13 @@ if __name__ == '__main__':
     tb_logger = SummaryWriter(cfg.tb_dir)
     tb_ind = 0
 
-    """ data """
+    # Data generator for the train phase, with the train split
     generator = data_generator(cfg, log, split='train', phase='training')
 
-    """ model """
-    model_id = cfg.get('model_id', 'agentformer')
-    model = model_dict[model_id](cfg)
+    # Get the model
+    model_id  = cfg.get('model_id', 'agentformer')
+    model     = model_dict[model_id](cfg)
+    # Get the optimizer and scheduler
     optimizer = optim.Adam(model.parameters(), lr=cfg.lr)
     scheduler_type = cfg.get('lr_scheduler', 'linear')
     if scheduler_type == 'linear':

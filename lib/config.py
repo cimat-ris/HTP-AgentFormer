@@ -24,6 +24,7 @@ class Config:
 
         self.cfg_dir = '%s/%s' % (self.cfg_root_dir, cfg_id)
         self.model_dir = '%s/models' % self.cfg_dir
+        print(self.model_dir)
         self.result_dir = '%s/results' % self.cfg_dir
         self.log_dir = '%s/log' % self.cfg_dir
         self.tb_dir = '%s/tb' % self.cfg_dir

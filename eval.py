@@ -3,7 +3,7 @@ import numpy as np
 import argparse
 from data.nuscenes_pred_split import get_nuscenes_pred_split
 from data.ethucy_split import get_ethucy_split
-from utils.utils import print_log, AverageMeter, isfile, print_log, AverageMeter, isfile, isfolder, find_unique_common_from_lists, load_list_from_folder, load_txt_file
+from lib.utils import print_log, AverageMeter, isfile, print_log, AverageMeter, isfile, isfolder, find_unique_common_from_lists, load_list_from_folder, load_txt_file
 
 
 """ Metrics """
@@ -56,6 +56,12 @@ if __name__ == '__main__':
         data_root = f'datasets/nuscenes_pred'
         gt_dir = f'{data_root}/label/{args.data}'
         seq_train, seq_val, seq_test = get_nuscenes_pred_split(data_root)
+        seq_eval = globals()[f'seq_{args.data}']
+    elif dataset == 'city_center':   # city center
+        gt_dir = f'datasets/city_center'
+        seq_train = []
+        seq_val = []
+        seq_test = ['gt_meters']
         seq_eval = globals()[f'seq_{args.data}']
     else:                            # ETH/UCY
         gt_dir = f'datasets/eth_ucy/{args.dataset}'
