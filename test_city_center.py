@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 
 def get_model_prediction(data, sample_k):
     model.set_data(data)
+    print(data.keys())
+    print(data['pre_data'])
     sample_motion_3D, data = model.inference(mode='infer', sample_num=sample_k, need_weights=False)
     sample_motion_3D       = sample_motion_3D.transpose(0, 1).contiguous()
     return sample_motion_3D, data

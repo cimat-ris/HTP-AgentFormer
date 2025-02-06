@@ -64,8 +64,6 @@ def test_model(generator, save_dir, cfg):
         data = generator()
         if data is None:
             continue        
-        print('data keys')
-        print(data.keys())
         seq_name, frame = data['seq'], data['frame']
         frame = int(frame)
         sys.stdout.write('testing seq: %s, frame: %06d                \r' % (seq_name, frame))  
@@ -76,30 +74,6 @@ def test_model(generator, save_dir, cfg):
             # 
             recon_motion_3D, sample_motion_3D = get_model_prediction(data, cfg.sample_k)
         recon_motion_3D, sample_motion_3D = recon_motion_3D * cfg.traj_scale, sample_motion_3D * cfg.traj_scale
-        
-        pre_motion       = torch.stack(data['pre_motion_3D'], dim=0).to(device) * cfg.traj_scale
-        fut_motion       = gt_motion_3D.cpu().numpy()
-        # Plot the prediction and the ground truth
-        fig = plt.figure(figsize=(10, 10))
-        ax = fig.add_subplot(111)
-        ax.set_xlim(-1, 3)
-        ax.set_ylim(-1, 1)
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.axis('equal')
-        print(pre_motion.shape)
-        ax.set_title(f'{seq_name} - frame {frame}')
-        for i in range(1):
-            ax.plot(pre_motion[i,:,0], pre_motion[i,:,1], 'bo-')
-        for i in range(1):
-            ax.plot(fut_motion[i,:,0], fut_motion[i,:,1], 'ro-')
-        for i in range(1):
-            for k in range(sample_motion_3D.shape[0]):
-                ax.plot(sample_motion_3D[k,i,:,0], sample_motion_3D[k,i,:,1], 'go-')
-
-
-        plt.show()
-
 
 
         """save samples"""
