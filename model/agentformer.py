@@ -515,9 +515,10 @@ class AgentFormer(nn.Module):
         self.data['batch_size'] = len(in_data['pre_motion_3D'])
         self.data['agent_num'] = len(in_data['pre_motion_3D'])
         self.data['pre_motion'] = torch.stack(in_data['pre_motion_3D'], dim=0).to(device).transpose(0, 1).contiguous()
-        self.data['fut_motion'] = torch.stack(in_data['fut_motion_3D'], dim=0).to(device).transpose(0, 1).contiguous()
-        self.data['fut_motion_orig'] = torch.stack(in_data['fut_motion_3D'], dim=0).to(device)   # future motion without transpose
-        self.data['fut_mask'] = torch.stack(in_data['fut_motion_mask'], dim=0).to(device)
+        if in_data['fut_motion_3D'] is not None:
+            self.data['fut_motion'] = torch.stack(in_data['fut_motion_3D'], dim=0).to(device).transpose(0, 1).contiguous()
+            self.data['fut_motion_orig'] = torch.stack(in_data['fut_motion_3D'], dim=0).to(device)   # future motion without transpose
+            self.data['fut_mask'] = torch.stack(in_data['fut_motion_mask'], dim=0).to(device)
         self.data['pre_mask'] = torch.stack(in_data['pre_motion_mask'], dim=0).to(device)
         scene_orig_all_past = self.cfg.get('scene_orig_all_past', False)
         if scene_orig_all_past:
@@ -540,13 +541,16 @@ class AgentFormer(nn.Module):
         else:
             theta = torch.zeros(1).to(device)
             for key in ['pre_motion', 'fut_motion', 'fut_motion_orig']:
-                self.data[f'{key}_scene_norm'] = self.data[key] - self.data['scene_orig']   # normalize per scene
+                if self.data[key] is not None:
+                    self.data[f'{key}_scene_norm'] = self.data[key] - self.data['scene_orig']   # normalize per scene
 
         self.data['pre_vel'] = self.data['pre_motion'][1:] - self.data['pre_motion'][:-1, :]
-        self.data['fut_vel'] = self.data['fut_motion'] - torch.cat([self.data['pre_motion'][[-1]], self.data['fut_motion'][:-1, :]])
+        if in_data['fut_motion_3D'] is not None:
+            self.data['fut_vel'] = self.data['fut_motion'] - torch.cat([self.data['pre_motion'][[-1]], self.data['fut_motion'][:-1, :]])
         self.data['cur_motion'] = self.data['pre_motion'][[-1]]
         self.data['pre_motion_norm'] = self.data['pre_motion'][:-1] - self.data['cur_motion']   # normalize pos per agent
-        self.data['fut_motion_norm'] = self.data['fut_motion'] - self.data['cur_motion']
+        if in_data['fut_motion_3D'] is not None:
+            self.data['fut_motion_norm'] = self.data['fut_motion'] - self.data['cur_motion']
         if in_data['heading'] is not None:
             self.data['heading_vec'] = torch.stack([torch.cos(self.data['heading']), torch.sin(self.data['heading'])], dim=-1)
 
