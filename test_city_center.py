@@ -12,16 +12,16 @@ from model.model_lib import model_dict
 from lib.utils import prepare_seed, print_log, mkdir_if_missing
 import matplotlib.pyplot as plt
 
-def get_model_prediction(data, sample_k):
-    model.set_data(data)
-    print(data.keys())
-    print(data['pre_data'])
-    sample_motion_3D, data = model.inference(mode='infer', sample_num=sample_k, need_weights=False)
-    sample_motion_3D       = sample_motion_3D.transpose(0, 1).contiguous()
-    return sample_motion_3D, data
+
+def prepare_data(data):
+    # Define a dictionary to store the data
+    simpler_data = {'pre_motion_3D':None, 'fut_motion_3D':None, 'fut_motion_mask':None, 'pre_motion_mask':None, 'pre_data':None, 'fut_data':None, 'heading':None, 'valid_id':None, 'traj_scale':None, 'pred_mask':None, 'scene_map':None, 'seq':None, 'frame':None}
+    simpler_data['pre_motion_3D']   = data['pre_motion_3D']   
+    print(data['pre_motion_3D'][0].shape)
+    simpler_data['pre_motion_mask'] = data['pre_motion_mask']   
+    return simpler_data
 
 def test_model(generator, cfg):
-    # 
     generator.shuffle()
     while not generator.is_epoch_end():
         # Get data from the generator (should be a dictionary)
@@ -36,12 +36,17 @@ def test_model(generator, cfg):
 
         gt_motion_3D = torch.stack(data['fut_motion_3D'], dim=0).to(device) * cfg.traj_scale
         with torch.no_grad():
-            # 
-            sample_motion_3D, produced_data = get_model_prediction(data, cfg.sample_k)
+            # Here is where we simplify the data into a dictionary with just the previous motion information
+            mydata = prepare_data(data) 
+            model.set_data(mydata)
+            sample_motion_3D, produced_data = model.inference(mode='infer', sample_num=cfg.sample_k, need_weights=False)
+            sample_motion_3D                = sample_motion_3D.transpose(0, 1).contiguous()
+
+
         sample_motion_3D = sample_motion_3D * cfg.traj_scale
         sample_motion_3D = sample_motion_3D.cpu().numpy()
         pre_motion       = produced_data['pre_motion'].cpu().numpy() * cfg.traj_scale
-        fut_motion       = produced_data['fut_motion_orig'].cpu().numpy() * cfg.traj_scale
+
         # Plot the prediction and the ground truth
         fig = plt.figure(figsize=(10, 10))
         ax = fig.add_subplot(111)
@@ -55,7 +60,7 @@ def test_model(generator, cfg):
         for i in range(1):
             ax.plot(pre_motion[:,i,0], pre_motion[:,i,1], 'bo-')
         for i in range(1):
-            ax.plot(fut_motion[i,:,0], fut_motion[i,:,1], 'ro-')
+            ax.plot(gt_motion_3D[i,:,0], gt_motion_3D[i,:,1], 'ro-')
         for i in range(1):
             for k in range(sample_motion_3D.shape[0]):
                 ax.plot(sample_motion_3D[k,i,:,0], sample_motion_3D[k,i,:,1], 'go-')
@@ -69,7 +74,6 @@ if __name__ == '__main__':
     parser.add_argument('--cfg', default=None)
     parser.add_argument('--epochs', default=None)
     parser.add_argument('--gpu', type=int, default=0)
-    parser.add_argument('--cleanup', action='store_true', default=False)
     args = parser.parse_args()
 
     # Read the configuration file
@@ -93,15 +97,8 @@ if __name__ == '__main__':
     model_cp = torch.load(cp_path, map_location='cpu',weights_only=True)
     model.load_state_dict(model_cp['model_dict'], strict=False)
 
-    """ save results and compute metrics """
-    generator = data_generator(cfg, log, split='test', phase='testing')
-    save_dir = f'{cfg.result_dir}/epoch_{epoch:04d}/test'; mkdir_if_missing(save_dir)
-    eval_dir = f'{save_dir}/samples'
-    
+    # Create a generator for the test data
+    generator = data_generator(cfg, log, split='test', phase='testing')    
+    # Apply model on these data
     test_model(generator, cfg)
-
-    # remove eval folder to save disk space
-    if args.cleanup:
-        shutil.rmtree(save_dir)
-
 
